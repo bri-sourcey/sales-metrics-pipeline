@@ -126,10 +126,3 @@ class DialerScraper:
 if __name__ == "__main__":
     scraper = DialerScraper()
     scraper.run()
-```
-
-Save, then update your `.env` with the new variable names:
-```
-DIALER_URL=https://autocarews.phdialer.com/vicidial/admin.php
-DIALER_USERNAME=your_username
-DIALER_PASSWORD=your_password
