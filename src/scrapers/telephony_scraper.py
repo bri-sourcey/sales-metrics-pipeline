@@ -7,18 +7,19 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 from dotenv import load_dotenv
 from datetime import datetime
+from urllib.parse import urlparse
 import os
 import time
 import shutil
 import glob
 
 
-class VicidialScraper:
+class DialerScraper:
     def __init__(self):
         load_dotenv()
-        self.username = os.getenv('VICIDIAL_USERNAME')
-        self.password = os.getenv('VICIDIAL_PASSWORD')
-        self.base_url = "https://autocarews.phdialer.com/vicidial/admin.php"
+        self.username = os.getenv('DIALER_USERNAME')
+        self.password = os.getenv('DIALER_PASSWORD')
+        self.base_url = os.getenv('DIALER_URL')
         self.download_dir = os.path.expanduser("~/Downloads")
         self.project_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         self.raw_data_dir = os.path.join(self.project_dir, "data", "raw")
@@ -35,14 +36,15 @@ class VicidialScraper:
         return self.driver
 
     def login(self):
-        """Step 1-2: Go to admin page with credentials in URL."""
-        print("Navigating to Vicidial...")
-        auth_url = f"https://{self.username}:{self.password}@autocarews.phdialer.com/vicidial/admin.php"
+        """Navigate to admin page with credentials."""
+        print("Navigating to dialer...")
+        parsed = urlparse(self.base_url)
+        auth_url = f"https://{self.username}:{self.password}@{parsed.netloc}{parsed.path}"
         self.driver.get(auth_url)
         print("Logged in!")
 
     def navigate_to_report(self):
-        """Step 3-4: Click Reports, then Fronter - Closer Report."""
+        """Navigate to the report page."""
         print("Clicking Reports...")
         reports_link = self.wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Reports")))
         reports_link.click()
@@ -51,8 +53,8 @@ class VicidialScraper:
         report_link = self.wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Fronter - Closer Report")))
         report_link.click()
 
-   def download_report(self, date_str: str, metric_type: str):
-        """Step 5-8: Set date, select dropdown, submit, download."""
+    def download_report(self, date_str: str, metric_type: str):
+        """Set date, select dropdown, submit, download."""
         print(f"Setting date to {date_str}...")
         date_field = self.wait.until(EC.presence_of_element_located((By.NAME, "query_date")))
         date_field.clear()
@@ -74,6 +76,10 @@ class VicidialScraper:
         time.sleep(3)
         return self._move_downloaded_file(date_str, metric_type)
 
+    def _move_downloaded_file(self, date_str: str, metric_type: str):
+        """Move downloaded file from Downloads to data/raw folder."""
+        time.sleep(2)
+
         pattern = os.path.join(self.download_dir, "FCSTATS_*.csv")
         files = glob.glob(pattern)
 
@@ -94,7 +100,7 @@ class VicidialScraper:
         return new_path
 
     def run(self, date_str: str = None):
-        """Run full extraction for both metrics."""
+        """Run full extraction for all metrics."""
         if not date_str:
             date_str = datetime.now().strftime("%Y-%m-%d")
 
@@ -118,5 +124,12 @@ class VicidialScraper:
 
 
 if __name__ == "__main__":
-    scraper = VicidialScraper()
+    scraper = DialerScraper()
     scraper.run()
+```
+
+Save, then update your `.env` with the new variable names:
+```
+DIALER_URL=https://autocarews.phdialer.com/vicidial/admin.php
+DIALER_USERNAME=your_username
+DIALER_PASSWORD=your_password
